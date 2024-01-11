@@ -19,9 +19,15 @@ class Bucket:
 
     return False
 
-  def get_fingerprint_index(self, fingerprint: str) -> int:
+  def get_fingerprint_index(self, fingerprint: int) -> int:
     for i, fp in enumerate(self.fingerprints):
       if fp == fingerprint:
         return i
 
     return -1
+
+  def __getitem__(self, index):
+    return self.fingerprints[index]
+
+  def __setitem__(self, index, value):
+    self.fingerprints[index] = value

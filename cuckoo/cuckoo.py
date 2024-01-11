@@ -37,18 +37,27 @@ class CuckooFilter(IFilter):
   def _kick_and_insert(self, fp, index: int) -> bool:
     for _ in range(self.max_count):
       bucket = self.buckets[index]
+      j = random.randint(0, self.bucket_size - 1)
 
-      victim_index_in_bucket = random.randint(0, self.bucket_size - 1)
-      victim = bucket.fingerprints[victim_index_in_bucket]
-      victim_alt_index = get_alt_index(victim, index, self.bucket_pow)
+      old_fp = fp
+      fp = bucket[j]
+      bucket[j] = old_fp
 
-      bucket.fingerprints[victim_index_in_bucket] = fp
-
-      if self._insert(victim, victim_alt_index):
+      i = get_alt_index(fp, index, self.bucket_pow)
+      if self._insert(fp, i):
         return True
 
     return False
 
 
   def lookup(self, element) -> bool:
-    return super().lookup(element)
+    i1, fp = get_index_and_fingerprint(element, self.bucket_pow)
+    i2 = get_alt_index(fp, i1, self.bucket_pow)
+
+    if self.buckets[i1].get_fingerprint_index(fp) > -1:
+      return True
+
+    if self.buckets[i2].get_fingerprint_index(fp) > -1:
+      return True
+
+    return False
