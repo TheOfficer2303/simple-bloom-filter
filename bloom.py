@@ -23,7 +23,7 @@ class BloomFilter(IFilter):
 class CountingBloomFilter(IFilter):
   def __init__(self, nbits: int, nhashes: int) -> None:
     super().__init__(nbits, nhashes, "Counting")
-    self.counter = [0 for _ in range(nbits)]
+    self.counter = [0 for _ in range(self.nbits)]
 
   def insert(self, element) -> None:
     indices = self._get_indices_for_element(element)
@@ -48,3 +48,7 @@ class CountingBloomFilter(IFilter):
       if self.counter[index] > 0:
         self.bitmap.reset(index)
         self.counter[index] -= 1
+
+  def reset(self) -> None:
+    super().reset()
+    self.counter = [0 for _ in range(self.nbits)]

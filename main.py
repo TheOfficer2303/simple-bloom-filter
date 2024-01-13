@@ -3,12 +3,25 @@ import string
 import time
 
 from matplotlib import pyplot as plt
+import numpy as np
 
 from bloom import BloomFilter, CountingBloomFilter
 from cuckoo.cuckoo import CuckooFilter
 from filter import IFilter
 
-ITERATIONS = 100
+ITERATIONS = 20
+NUM_ELEMENTS = 10000
+ELEMENT_SIZE = 3
+
+def generate_data() -> list[str]:
+  chars = string.ascii_lowercase
+  unique_strings = set()
+
+  while len(unique_strings) < NUM_ELEMENTS:
+    random_string = ''.join(random.choice(chars) for _ in range(ELEMENT_SIZE))
+    unique_strings.add(random_string)
+
+  return list(unique_strings)
 
 def plot(filter, it, lt):
   iterations = list(range(0, ITERATIONS))
@@ -21,12 +34,25 @@ def plot(filter, it, lt):
   plt.show()
 
 
+def plot_lookup_time(l1, l2 , l3):
+  iterations = list(range(0, ITERATIONS))
+
+  plt.title(f"Filters Lookup Performance over {ITERATIONS} Iterations with {NUM_ELEMENTS} elements")
+  plt.plot(iterations, l1, label="Bloom")
+  plt.plot(iterations, l2, label="Counting")
+  plt.plot(iterations, l3, label="Cuckoo")
+  plt.xlabel("Iteration")
+  plt.ylabel("Time (ms)")
+
+  plt.legend()
+  plt.show()
+
 def test_effectiveness(filter: IFilter, wanna_plot = True):
   insertion_times = []
   lookup_times = []
 
   for _ in range(ITERATIONS):
-    elements  = [''.join(random.choice(string.ascii_lowercase) for _ in range(3)) for _ in range(1000)]
+    elements  = generate_data()
 
     insertion_start = time.time_ns()
     for el in elements:
@@ -41,7 +67,7 @@ def test_effectiveness(filter: IFilter, wanna_plot = True):
 
     print(f"Insertion time for {filter.name}: {insertion_time:.2f} ms")
     print(f"Lookup time for {filter.name}: {lookup_time:.2f} ms")
-    print(f"{hits} / {len(elements)}")
+    print(f"Hits: {hits} / {len(elements)}")
 
     filter.reset()
 
@@ -50,34 +76,43 @@ def test_effectiveness(filter: IFilter, wanna_plot = True):
 
   return lookup_times
 
-def test_bloom():
-  bloom = BloomFilter(2885, 2)
-  return test_effectiveness(bloom, False)
+def test_false_positive_rate(filter: IFilter):
+  fp_rates = []
 
-def test_counting():
-  counting = CountingBloomFilter(2885, 2)
-  return test_effectiveness(counting, False)
+  for i in range(ITERATIONS):
+    known_elements, test_elements  = [[''.join(random.choice(string.ascii_lowercase) for _ in range(ELEMENT_SIZE)) for _ in range(NUM_ELEMENTS)] for _ in range(2)]
 
-def test_cuckoo():
-  cuckoo = CuckooFilter(capacity=1000)
-  return test_effectiveness(cuckoo, False)
+    for el in known_elements:
+      filter.insert(el)
+
+    false_positives = 0
+    for element in test_elements:
+      if filter.lookup(element):
+        if element not in known_elements:
+          false_positives += 1
+        else:
+          test_elements.remove(element)
+
+    false_positive_rate = false_positives / len(test_elements)
+    fp_rates.append(false_positive_rate)
+    print(f"False Positive Rate for {filter.name} in iteration {i}: {false_positive_rate}")
+    filter.reset()
+
+  avg = np.average(fp_rates)
+  print(f"Average False Positive Rate for {filter.name}: {avg}")
+
+  return avg
+
+def test(filter: IFilter):
+  return test_effectiveness(filter, False), test_false_positive_rate(filter)
 
 def main():
-  lookup_times1 = test_bloom()
-  lookup_times2 = test_counting()
-  lookup_times3 = test_cuckoo()
-  iterations = list(range(0, ITERATIONS))
+  lookup_bloom, avg_fp_bloom = test(BloomFilter(NUM_ELEMENTS, nhashes=3))
+  lookup_counting, avg_fp_counting = test(CountingBloomFilter(NUM_ELEMENTS, nhashes=3))
+  lookup_cuckoo, avg_fp_cuckoo = test(CuckooFilter(NUM_ELEMENTS))
 
-
-  plt.title(f'Filters Lookup Performance over 100 Iterations')
-  plt.plot(iterations, lookup_times1, label="Bloom")
-  plt.plot(iterations, lookup_times2, label="Counting")
-  plt.plot(iterations, lookup_times3, label="Cuckoo")
-  plt.xlabel('Iteration')
-  plt.ylabel('Time (ms)')
-
-  plt.legend()
-  plt.show()
+  print(avg_fp_bloom, avg_fp_counting, avg_fp_cuckoo)
+  plot_lookup_time(lookup_bloom, lookup_counting, lookup_cuckoo)
 
 
 
