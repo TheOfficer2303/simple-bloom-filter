@@ -6,10 +6,11 @@ import mmh3
 from my_bitmap import MyBitMap
 
 class IFilter(ABC):
-  def __init__(self, nbits: int, nhashes: int) -> None:
+  def __init__(self, nbits: int, nhashes: int, name: str) -> None:
     self.bitmap = MyBitMap(nbits)
     self.nbits = nbits
     self.nhashes = nhashes
+    self.name = name
 
     self.seeds = [randint(0, 1000) for _ in range(nhashes)]
 
@@ -19,6 +20,9 @@ class IFilter(ABC):
 
   def _h(self, element, seed: int) -> None:
     return mmh3.hash(element, seed)
+
+  def reset(self) -> None:
+    self.bitmap.clear()
 
   @abstractmethod
   def insert(self, element) -> None:

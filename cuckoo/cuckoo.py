@@ -9,13 +9,14 @@ from filter import IFilter
 
 class CuckooFilter(IFilter):
   def __init__(self, capacity: int, bucket_size = 4) -> None:
+    self.name = "Cuckoo"
+
     self.bucket_size = bucket_size
     self.capacity = next_power_of_2(capacity) // bucket_size
     self.bucket_pow = int(math.log2(self.capacity))
     self.max_count = 500
 
     self.buckets: List[Bucket] = [Bucket() for _ in range(self.capacity)]
-
 
   def insert(self, element) -> bool:
     i1, fp = get_index_and_fingerprint(element, self.bucket_pow)
@@ -27,6 +28,22 @@ class CuckooFilter(IFilter):
       return True
 
     self._kick_and_insert(fp, random.choice([i1, i2]))
+
+  def lookup(self, element) -> bool:
+    i1, fp = get_index_and_fingerprint(element, self.bucket_pow)
+    i2 = get_alt_index(fp, i1, self.bucket_pow)
+
+    if self.buckets[i1].get_fingerprint_index(fp) > -1:
+      return True
+
+    if self.buckets[i2].get_fingerprint_index(fp) > -1:
+      return True
+
+    return False
+
+  def reset(self) -> None:
+    for bucket in self.buckets:
+      bucket.reset()
 
   def _insert(self, fp, index: int) -> bool:
     if self.buckets[index].insert(fp):
@@ -46,18 +63,5 @@ class CuckooFilter(IFilter):
       i = get_alt_index(fp, index, self.bucket_pow)
       if self._insert(fp, i):
         return True
-
-    return False
-
-
-  def lookup(self, element) -> bool:
-    i1, fp = get_index_and_fingerprint(element, self.bucket_pow)
-    i2 = get_alt_index(fp, i1, self.bucket_pow)
-
-    if self.buckets[i1].get_fingerprint_index(fp) > -1:
-      return True
-
-    if self.buckets[i2].get_fingerprint_index(fp) > -1:
-      return True
 
     return False

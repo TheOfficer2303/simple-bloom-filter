@@ -26,6 +26,10 @@ class Bucket:
 
     return -1
 
+  def reset(self):
+    for i, fp in enumerate(self.fingerprints):
+      self.fingerprints[i] = None
+
   def __getitem__(self, index):
     return self.fingerprints[index]
 

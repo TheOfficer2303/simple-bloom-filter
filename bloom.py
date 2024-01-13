@@ -2,7 +2,7 @@ from filter import IFilter
 
 class BloomFilter(IFilter):
   def __init__(self, nbits: int, nhashes) -> None:
-    super().__init__(nbits, nhashes)
+    super().__init__(nbits, nhashes, "Bloom")
 
   def insert(self, element: any) -> None:
     indices = self._get_indices_for_element(element)
@@ -22,7 +22,7 @@ class BloomFilter(IFilter):
 
 class CountingBloomFilter(IFilter):
   def __init__(self, nbits: int, nhashes: int) -> None:
-    super().__init__(nbits, nhashes)
+    super().__init__(nbits, nhashes, "Counting")
     self.counter = [0 for _ in range(nbits)]
 
   def insert(self, element) -> None:
