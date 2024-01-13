@@ -2,7 +2,7 @@ from copy import deepcopy
 import math
 import random
 from typing import List
-from bucket import Bucket
+from cuckoo.bucket import Bucket
 from cuckoo.util import get_alt_index, get_index_and_fingerprint, next_power_of_2
 from filter import IFilter
 
