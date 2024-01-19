@@ -13,7 +13,6 @@ class MyBitMap():
     self.bitmap: array[int] = array('B', [0 for _ in range(self.number_of_bytes)])
 
   def set(self, position: int) -> None:
-    # position je mjesto bita
     self.bitmap[position // 8] |= self.BITMASK[position % 8]
 
   def reset(self, position: int) -> None:

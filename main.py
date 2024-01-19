@@ -9,7 +9,7 @@ from bloom import BloomFilter, CountingBloomFilter
 from cuckoo.cuckoo import CuckooFilter
 from filter import IFilter
 
-ITERATIONS = 20
+ITERATIONS = 50
 NUM_ELEMENTS = 10000
 ELEMENT_SIZE = 3
 
@@ -23,15 +23,20 @@ def generate_data() -> list[str]:
 
   return list(unique_strings)
 
-def plot(filter, it, lt):
+def plot_filter(filter, it, lt):
   iterations = list(range(0, ITERATIONS))
+
+  plt.title(f'{filter.name} Filter Performance over {ITERATIONS} Iterations')
   plt.plot(iterations, it, label='Insertion Time')
   plt.plot(iterations, lt, label='Lookup Time')
+
   plt.xlabel('Iteration')
+  plt.xticks(range(0, ITERATIONS + 1, 5))
   plt.ylabel('Time (ms)')
-  plt.title(f'{filter.name} Filter Performance over 100 Iterations')
-  plt.legend()
-  plt.show()
+
+  plt.legend(loc='lower left')
+  plt.savefig(f"graphs/{filter.name}_performance.png")
+  plt.close()
 
 
 def plot_lookup_time(l1, l2 , l3):
@@ -41,17 +46,19 @@ def plot_lookup_time(l1, l2 , l3):
   plt.plot(iterations, l1, label="Bloom")
   plt.plot(iterations, l2, label="Counting")
   plt.plot(iterations, l3, label="Cuckoo")
+
   plt.xlabel("Iteration")
+  plt.xticks(range(0, ITERATIONS + 1, 5))
   plt.ylabel("Time (ms)")
 
-  plt.legend()
-  plt.show()
+  plt.legend(loc='lower left')
+  plt.savefig("graphs/lookup_times.png")
 
 def test_effectiveness(filter: IFilter, wanna_plot = True):
   insertion_times = []
   lookup_times = []
 
-  for _ in range(ITERATIONS):
+  for i in range(ITERATIONS):
     elements  = generate_data()
 
     insertion_start = time.time_ns()
@@ -65,14 +72,16 @@ def test_effectiveness(filter: IFilter, wanna_plot = True):
     lookup_time = (time.time_ns() - lookup_start) / 10e3
     lookup_times.append(lookup_time)
 
-    print(f"Insertion time for {filter.name}: {insertion_time:.2f} ms")
-    print(f"Lookup time for {filter.name}: {lookup_time:.2f} ms")
-    print(f"Hits: {hits} / {len(elements)}")
+    print(f"Insertion time for {filter.name} in iteration {i}: {insertion_time:.2f} ms")
+    print(f"Lookup time for {filter.name} in iteration {i}: {lookup_time:.2f} ms")
+    print(f"Hits in iteration {i}: {hits} / {len(elements)}")
+
+    print()
 
     filter.reset()
 
   if wanna_plot:
-    plot(filter, insertion_times, lookup_times)
+    plot_filter(filter, insertion_times, lookup_times)
 
   return lookup_times
 
@@ -104,17 +113,18 @@ def test_false_positive_rate(filter: IFilter):
   return avg
 
 def test(filter: IFilter):
-  return test_effectiveness(filter, False), test_false_positive_rate(filter)
+  return test_effectiveness(filter), test_false_positive_rate(filter)
 
 def main():
   lookup_bloom, avg_fp_bloom = test(BloomFilter(NUM_ELEMENTS, nhashes=3))
   lookup_counting, avg_fp_counting = test(CountingBloomFilter(NUM_ELEMENTS, nhashes=3))
   lookup_cuckoo, avg_fp_cuckoo = test(CuckooFilter(NUM_ELEMENTS))
 
-  print(avg_fp_bloom, avg_fp_counting, avg_fp_cuckoo)
+  print(f"Average False Positive Rate for Bloom: {avg_fp_bloom}")
+  print(f"Average False Positive Rate for Counting Bloom Filter: {avg_fp_counting}")
+  print(f"Average False Positive Rate for Cuckoo: {avg_fp_cuckoo}")
+
   plot_lookup_time(lookup_bloom, lookup_counting, lookup_cuckoo)
-
-
 
 if __name__ == "__main__":
   main()
